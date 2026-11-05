@@ -18,6 +18,7 @@
  */
 package org.cyclonedx.util;
 
+import com.fasterxml.jackson.core.json.JsonReadFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.cyclonedx.model.AttachmentText;
 import org.cyclonedx.model.License;
@@ -163,9 +164,11 @@ public final class LicenseResolver {
             return null;
         }
 
-        final InputStream is = LicenseResolver.class.getResourceAsStream("/license-mapping.json");
+        final InputStream is = LicenseResolver.class.getResourceAsStream("/license-mapping.jsonc");
 
-        final SpdxLicenseMapping[] mappings = mapper.readValue(is, SpdxLicenseMapping[].class);
+        final SpdxLicenseMapping[] mappings = mapper.readerFor(SpdxLicenseMapping[].class)
+                .with(JsonReadFeature.ALLOW_JAVA_COMMENTS)
+                .readValue(is);
 
         if (mappings != null) {
             for (final SpdxLicenseMapping licenseMapping : mappings) {

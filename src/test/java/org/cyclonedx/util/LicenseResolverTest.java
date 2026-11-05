@@ -83,4 +83,18 @@ public class LicenseResolverTest {
         LicenseChoice c5 = LicenseResolver.resolve(" Modified BSD License ");
         assertEquals("BSD-3-Clause", c5.getLicenses().get(0).getId());
     }
+
+    @Test
+    public void licenseLynxMatchingTest() {
+        LicenseChoice c1 = LicenseResolver.resolve("MIT Licence");
+        assertEquals("MIT", c1.getLicenses().get(0).getId());
+    }
+
+    @Test
+    public void fuzzyMatchingFallbackTest() {
+        LicenseChoice c1 = LicenseResolver.resolve("APACHE 2");
+        assertEquals("Apache-2.0", c1.getLicenses().get(0).getId());
+        LicenseChoice c2 = LicenseResolver.resolve("CDDL/GPLv2+CE");
+        assertEquals("(CDDL-1.0 OR GPL-2.0-with-classpath-exception)", c2.getExpression().getValue());
+    }
 }
