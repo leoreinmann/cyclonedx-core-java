@@ -23,6 +23,8 @@ import org.cyclonedx.model.AttachmentText;
 import org.cyclonedx.model.License;
 import org.cyclonedx.model.LicenseChoice;
 import org.cyclonedx.model.license.Expression;
+import org.licenselynx.LicenseLynx;
+import org.licenselynx.LicenseObject;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -43,7 +45,8 @@ public final class LicenseResolver {
 
     /**
      * Attempts to resolve the specified license string via SPDX license identifier and expression
-     * parsing first. If SPDX resolution is not successful, the method will attempt fuzzy matching.
+     * parsing first. If SPDX resolution is not successful, the method will attempt resolution
+     * using LicenseLynx, followed by fuzzy matching if unresolved.
      * @param licenseString the license string to resolve
      * @return a LicenseChoice object if resolution was successful, or null if unresolved
      */
@@ -53,7 +56,8 @@ public final class LicenseResolver {
 
     /**
      * Attempts to resolve the specified license string via SPDX license identifier and expression
-     * parsing first. If SPDX resolution is not successful, the method will attempt fuzzy matching.
+     * parsing first. If SPDX resolution is not successful, the method will attempt resolution
+     * using LicenseLynx, followed by fuzzy matching if unresolved.
      * @param licenseString the license string to resolve
      * @param includeLicenseText specifies is the resolved license will include the entire text of the license
      * @return a LicenseChoice object if resolution was successful, or null if unresolved
@@ -68,7 +72,8 @@ public final class LicenseResolver {
 
     /**
      * Attempts to resolve the specified license string via SPDX license identifier and expression
-     * parsing first. If SPDX resolution is not successful, the method will attempt fuzzy matching.
+     * parsing first. If SPDX resolution is not successful, the method will attempt resolution
+     * using LicenseLynx, followed by fuzzy matching if unresolved.
      * @param licenseString the license string to resolve
      * @param licenseTextSettings specifies settings regarding the entire text of the resolved license
      * @return a LicenseChoice object if resolution was successful, or null if unresolved
@@ -83,6 +88,9 @@ public final class LicenseResolver {
         try {
             LicenseChoice licenseChoice = resolveLicenseString(licenseString, licenseTextSettings, mapper);
 
+            if (licenseChoice == null) {
+                licenseChoice = resolveLicenseLynx(licenseString, licenseTextSettings, mapper);
+            }
             if (licenseChoice == null) {
                 licenseChoice = resolveFuzzyMatching(licenseString, licenseTextSettings, mapper);
             }
@@ -179,6 +187,23 @@ public final class LicenseResolver {
         }
 
         return null;
+    }
+
+    /**
+     * Resolves a license name using LicenseLynx.
+     * @param licenseString the license string (not the actual license text)
+     * @param licenseTextSettings specifies whether and how to include the license text
+     * @param mapper the Jackson ObjectMapper used to read the bundled SPDX license list
+     * @return a LicenseChoice object if resolved to a supported SPDX license, otherwise null
+     * @throws IOException if the bundled SPDX license list or license text cannot be read
+     */
+    private static LicenseChoice resolveLicenseLynx(final String licenseString,
+            final LicenseTextSettings licenseTextSettings, final ObjectMapper mapper) throws IOException {
+        final LicenseObject license = LicenseLynx.map(licenseString.trim());
+        if (license == null || !license.isSpdxIdentifier()) {
+            return null;
+        }
+        return resolveLicenseString(license.getId(), licenseTextSettings, mapper);
     }
 
     private static String urlNormalize(String input) {
